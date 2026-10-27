@@ -168,6 +168,7 @@ class LLMVision(io.ComfyNode):
                 *file_inputs("vision"),
             ],
             outputs=[io.String.Output("caption")],
+            is_output_node=True,
         )
 
     @classmethod
@@ -197,6 +198,7 @@ class LLMPromptEnhancer(io.ComfyNode):
                 *file_inputs("text"),
             ],
             outputs=[io.String.Output("enhanced_prompt")],
+            is_output_node=True,
         )
 
     @classmethod
@@ -270,6 +272,7 @@ class MiniMaxRef2VA(io.ComfyNode):
                 *file_inputs("text"),
             ],
             outputs=[io.String.Output("enhanced_prompt")],
+            is_output_node=True,
         )
 
     @classmethod
@@ -300,6 +303,7 @@ class MiniMaxFL2VA(io.ComfyNode):
                 *file_inputs("text"),
             ],
             outputs=[io.String.Output("enhanced_prompt")],
+            is_output_node=True,
         )
 
     @classmethod
