@@ -11,7 +11,7 @@ import yaml
 from PIL import Image
 
 import folder_paths
-from comfy_api.latest import ComfyExtension, io
+from comfy_api.latest import ComfyExtension, io, ui
 
 with open(os.path.join(os.path.dirname(__file__), "presets.yaml"), encoding="utf-8") as f:
     PRESETS = yaml.safe_load(f)
@@ -57,12 +57,35 @@ def chat(llm, system, text, images=()):
     return (response.json()["choices"][0]["message"]["content"] or "").strip()
 
 
+def output_path(relative):
+    path = os.path.abspath(os.path.join(folder_paths.get_output_directory(), relative))
+    if os.path.commonpath((path, folder_paths.get_output_directory())) != folder_paths.get_output_directory():
+        raise ValueError(f"Path must stay inside the output directory: {relative}")
+    return path
+
+
+def cached_files():
+    root = output_path("claude-prompt-enhancer")
+    files = []
+    for dirpath, _, names in os.walk(root):
+        files += [os.path.relpath(os.path.join(dirpath, n), root).replace("\\", "/") for n in names if n.endswith((".txt", ".json"))]
+    return ["none"] + sorted(files, reverse=True)
+
+
+def load_cached(cache_file):
+    if cache_file == "none":
+        raise ValueError("Pick a cache_file to load")
+    cache_file = os.path.join("claude-prompt-enhancer", cache_file)
+    with open(output_path(cache_file), encoding="utf-8") as f:
+        if cache_file.endswith(".json"):
+            return json.load(f)["output"]
+        return f.read()
+
+
 def save_output(save_format, subfolder, preset, llm, input_text, output_text):
     if save_format == "none":
         return
-    out_dir = os.path.join(folder_paths.get_output_directory(), subfolder)
-    if os.path.commonpath((os.path.abspath(out_dir), folder_paths.get_output_directory())) != folder_paths.get_output_directory():
-        raise ValueError(f"subfolder must stay inside the output directory: {subfolder}")
+    out_dir = output_path(subfolder)
     os.makedirs(out_dir, exist_ok=True)
     now = datetime.now()
     title = "-".join(re.findall(r"[a-z0-9]+", (input_text or output_text).lower())[:5]) or "untitled"
@@ -78,10 +101,13 @@ def save_output(save_format, subfolder, preset, llm, input_text, output_text):
                        "model": llm["model"], "input": input_text, "output": output_text}, f, ensure_ascii=False, indent=2)
 
 
-def save_inputs():
+def file_inputs():
     return [
         io.Combo.Input("save_format", options=["txt", "json", "none"], default="txt"),
         io.String.Input("subfolder", default="claude-prompt-enhancer", advanced=True),
+        io.Boolean.Input("load_from_cache", default=False, tooltip="Read cache_file instead of calling the LLM."),
+        io.Combo.Input("cache_file", options=cached_files(), tooltip="Files in output/claude-prompt-enhancer, newest first. "
+                       "Refresh the node definitions (R) to see new files."),
     ]
 
 
@@ -132,21 +158,26 @@ class LLMVision(io.ComfyNode):
             display_name="LLM Vision",
             category="conditioning/prompt",
             inputs=[
-                LLMConnection.Input("llm"),
-                io.Image.Input("image"),
+                LLMConnection.Input("llm", optional=True),
+                io.Image.Input("image", optional=True),
                 io.Combo.Input("preset", options=list(PRESETS["vision"])),
                 io.String.Input("instruction", multiline=True, default="", optional=True,
                                 tooltip="Extra notes sent with the image."),
-                *save_inputs(),
+                *file_inputs(),
             ],
             outputs=[io.String.Output("caption")],
         )
 
     @classmethod
-    def execute(cls, llm, image, preset, save_format, subfolder="claude-prompt-enhancer", instruction="") -> io.NodeOutput:
-        caption = chat(llm, PRESETS["vision"][preset], instruction or "Describe this image.", encode_images(image))
-        save_output(save_format, subfolder, preset, llm, instruction, caption)
-        return io.NodeOutput(caption)
+    def execute(cls, preset, save_format, subfolder, load_from_cache, cache_file, llm=None, image=None, instruction="") -> io.NodeOutput:
+        if load_from_cache:
+            caption = load_cached(cache_file)
+        else:
+            if llm is None or image is None:
+                raise ValueError("Connect llm and image, or turn on load_from_cache")
+            caption = chat(llm, PRESETS["vision"][preset], instruction or "Describe this image.", encode_images(image))
+            save_output(save_format, subfolder, preset, llm, instruction, caption)
+        return io.NodeOutput(caption, ui=ui.PreviewText(caption))
 
 
 class LLMPromptEnhancer(io.ComfyNode):
@@ -157,21 +188,26 @@ class LLMPromptEnhancer(io.ComfyNode):
             display_name="LLM Prompt Enhancer",
             category="conditioning/prompt",
             inputs=[
-                LLMConnection.Input("llm"),
+                LLMConnection.Input("llm", optional=True),
                 io.String.Input("prompt", multiline=True, default=""),
                 io.Combo.Input("preset", options=list(PRESETS["enhancer"])),
                 io.Image.Input("image", optional=True, tooltip="First frame or references for the MiniMax presets."),
-                *save_inputs(),
+                *file_inputs(),
             ],
             outputs=[io.String.Output("enhanced_prompt")],
         )
 
     @classmethod
-    def execute(cls, llm, prompt, preset, save_format, subfolder="claude-prompt-enhancer", image=None) -> io.NodeOutput:
-        images = encode_images(image) if image is not None else ()
-        enhanced = chat(llm, PRESETS["enhancer"][preset], prompt, images)
-        save_output(save_format, subfolder, preset, llm, prompt, enhanced)
-        return io.NodeOutput(enhanced)
+    def execute(cls, prompt, preset, save_format, subfolder, load_from_cache, cache_file, llm=None, image=None) -> io.NodeOutput:
+        if load_from_cache:
+            enhanced = load_cached(cache_file)
+        else:
+            if llm is None:
+                raise ValueError("Connect llm, or turn on load_from_cache")
+            images = encode_images(image) if image is not None else ()
+            enhanced = chat(llm, PRESETS["enhancer"][preset], prompt, images)
+            save_output(save_format, subfolder, preset, llm, prompt, enhanced)
+        return io.NodeOutput(enhanced, ui=ui.PreviewText(enhanced))
 
 
 class PromptEnhancerExtension(ComfyExtension):
