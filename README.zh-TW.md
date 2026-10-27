@@ -13,7 +13,7 @@ LLM Connector ──┬─→ LLM Vision ──caption──→ LLM Prompt Enhan
 
 ```
 cd ComfyUI/custom_nodes
-git clone <this repo> comfyui-claude-prompt-enhancer
+git clone https://github.com/locke12456/comfyui-claude-prompt-enhancer.git
 pip install -r comfyui-claude-prompt-enhancer/requirements.txt
 ```
 
