@@ -63,7 +63,7 @@ Preset：`anima sfw/nsfw`、`moss image`、`qwen image sfw/nsfw`、`minimax i2va
 
 ## 修改 preset
 
-Preset 以 system prompt 形式放在 `presets.yaml`，改完重啟 ComfyUI 即可。`prompts-define.md` 說明各 preset 的撰寫規則。
+Preset 以 system prompt 形式放在 `presets.yaml`，改完重啟 ComfyUI 即可。`doc/prompts-define.md` 是撰寫 preset 時的草案，node 實際讀取的是 `presets.yaml`。
 
 ## 注意
 

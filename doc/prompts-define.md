@@ -1,3 +1,5 @@
+> 草案：preset 的撰寫依據。node 實際讀取的是 `presets.yaml`，兩者可能不同步（例如 FL2VA preset 只在 `presets.yaml`）。
+
 <aside>
 📌
 

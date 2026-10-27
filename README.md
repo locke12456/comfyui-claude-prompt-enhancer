@@ -63,7 +63,7 @@ The result is shown on the node as a text preview.
 
 ## Editing presets
 
-Presets live in `presets.yaml` as system prompts. Edit and restart ComfyUI. `prompts-define.md` documents the rules behind them.
+Presets live in `presets.yaml` as system prompts. Edit and restart ComfyUI. `doc/prompts-define.md` is the draft the presets were written from; `presets.yaml` is what the nodes load.
 
 ## Notes
 
