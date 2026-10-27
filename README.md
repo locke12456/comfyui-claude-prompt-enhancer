@@ -36,13 +36,21 @@ Captions `image` with a `vision` preset. The caption can feed the enhancer's `pr
 
 Rewrites `prompt` with an `enhancer` preset. `image` is optional and is sent along, for example as the first frame for MiniMax I2VA.
 
-Presets: `anima sfw/nsfw`, `moss image`, `qwen image sfw/nsfw`, `minimax i2va sfw/nsfw`, `minimax ref2va sfw/nsfw`.
+Presets: `anima sfw/nsfw`, `moss image`, `qwen image sfw/nsfw`, `minimax i2va sfw/nsfw`.
+
+### MiniMax Picture Combine
+
+Collects 1-9 pictures. A new `picture_N` slot appears as each one is connected. Each slot takes an image or a caption string, such as an LLM Vision output or cache, and is labeled `<Picture 1>` to `<Picture N>` in slot order. Captions are sent as text in place of the image; every frame of an image batch counts as one picture.
+
+### MiniMax Ref2VA / MiniMax FL2VA
+
+Take `llm`, `pictures` from the combine node and `prompt`, and write a MiniMax H3 Ref2VA or FL2VA prompt. FL2VA uses Picture 1 as the first frame and Picture 2 as the last frame, at `last_frame_seconds`.
 
 ## Saving and cache
 
-Both text nodes share these inputs:
+All text nodes share these inputs:
 
-- `save_format`: `txt`, `json` or `none`. Files go to `output/claude-prompt-enhancer/{datetime}-{short-title}-{number}.{ext}`. JSON also records the preset, provider, model and input.
+- `save_format`: `txt`, `json` or `none`. Files go to `output/claude-prompt-enhancer/vision/` (LLM Vision) or `output/claude-prompt-enhancer/text/` (other nodes) as `{datetime}-{preset}-{N}pic-{short-title}-{number}.{ext}`, where N is the number of images sent. JSON also records the preset, provider, model and input.
 - `subfolder` (advanced): folder under `output/`.
 - `load_from_cache`: when on, the node reads `cache_file` instead of sending a request, and `llm` / `image` may stay unconnected.
 - `cache_file`: dropdown of txt/json files in `output/claude-prompt-enhancer`, newest first. Press **R** to refresh after new outputs.

@@ -19,6 +19,7 @@ with open(os.path.join(os.path.dirname(__file__), "presets.yaml"), encoding="utf
 CLAUDE_MODELS = ["claude-haiku-5-5", "claude-sonnet-5-5", "claude-opus-5-5"]
 
 LLMConnection = io.Custom("LLM_CONNECTION")
+Pictures = io.Custom("MINIMAX_PICTURES")
 
 
 def encode_images(image):
@@ -82,14 +83,14 @@ def load_cached(cache_file):
         return f.read()
 
 
-def save_output(save_format, subfolder, preset, llm, input_text, output_text):
+def save_output(save_format, subfolder, preset, llm, input_text, output_text, picture_count):
     if save_format == "none":
         return
     out_dir = output_path(subfolder)
     os.makedirs(out_dir, exist_ok=True)
     now = datetime.now()
     title = "-".join(re.findall(r"[a-z0-9]+", (input_text or output_text).lower())[:5]) or "untitled"
-    stem = f"{now:%Y%m%d-%H%M%S}-{title}"
+    stem = f"{now:%Y%m%d-%H%M%S}-{preset.replace(' ', '-')}-{picture_count}pic-{title}"
     number = 1
     while os.path.exists(os.path.join(out_dir, f"{stem}-{number:03}.{save_format}")):
         number += 1
@@ -101,10 +102,10 @@ def save_output(save_format, subfolder, preset, llm, input_text, output_text):
                        "model": llm["model"], "input": input_text, "output": output_text}, f, ensure_ascii=False, indent=2)
 
 
-def file_inputs():
+def file_inputs(subfolder):
     return [
         io.Combo.Input("save_format", options=["txt", "json", "none"], default="txt"),
-        io.String.Input("subfolder", default="claude-prompt-enhancer", advanced=True),
+        io.String.Input("subfolder", default=f"claude-prompt-enhancer/{subfolder}", advanced=True),
         io.Boolean.Input("load_from_cache", default=False, tooltip="Read cache_file instead of calling the LLM."),
         io.Combo.Input("cache_file", options=cached_files(), tooltip="Files in output/claude-prompt-enhancer, newest first. "
                        "Refresh the node definitions (R) to see new files."),
@@ -163,7 +164,7 @@ class LLMVision(io.ComfyNode):
                 io.Combo.Input("preset", options=list(PRESETS["vision"])),
                 io.String.Input("instruction", multiline=True, default="", optional=True,
                                 tooltip="Extra notes sent with the image."),
-                *file_inputs(),
+                *file_inputs("vision"),
             ],
             outputs=[io.String.Output("caption")],
         )
@@ -176,7 +177,7 @@ class LLMVision(io.ComfyNode):
             if llm is None or image is None:
                 raise ValueError("Connect llm and image, or turn on load_from_cache")
             caption = chat(llm, PRESETS["vision"][preset], instruction or "Describe this image.", encode_images(image))
-            save_output(save_format, subfolder, preset, llm, instruction, caption)
+            save_output(save_format, subfolder, preset, llm, instruction, caption, len(image))
         return io.NodeOutput(caption, ui=ui.PreviewText(caption))
 
 
@@ -192,7 +193,7 @@ class LLMPromptEnhancer(io.ComfyNode):
                 io.String.Input("prompt", multiline=True, default=""),
                 io.Combo.Input("preset", options=list(PRESETS["enhancer"])),
                 io.Image.Input("image", optional=True, tooltip="First frame or references for the MiniMax presets."),
-                *file_inputs(),
+                *file_inputs("text"),
             ],
             outputs=[io.String.Output("enhanced_prompt")],
         )
@@ -206,10 +207,113 @@ class LLMPromptEnhancer(io.ComfyNode):
                 raise ValueError("Connect llm, or turn on load_from_cache")
             images = encode_images(image) if image is not None else ()
             enhanced = chat(llm, PRESETS["enhancer"][preset], prompt, images)
-            save_output(save_format, subfolder, preset, llm, prompt, enhanced)
+            save_output(save_format, subfolder, preset, llm, prompt, enhanced, len(images))
+        return io.NodeOutput(enhanced, ui=ui.PreviewText(enhanced))
+
+
+class PictureCombine(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxPictureCombine",
+            display_name="MiniMax Picture Combine",
+            category="conditioning/prompt",
+            inputs=[
+                io.Autogrow.Input("pictures", template=io.Autogrow.TemplatePrefix(
+                    input=io.MultiType.Input("picture", [io.Image, io.String],
+                                             tooltip="Image or caption text, labeled <Picture N> in slot order. Every frame of an image batch counts as one picture."),
+                    prefix="picture_", min=1, max=9)),
+            ],
+            outputs=[Pictures.Output("pictures")],
+        )
+
+    @classmethod
+    def execute(cls, pictures: io.Autogrow.Type) -> io.NodeOutput:
+        names = sorted(pictures, key=lambda n: int(n.rsplit("_", 1)[1]))
+        out = []
+        for n in names:
+            if isinstance(pictures[n], str):
+                out.append(("caption", pictures[n]))
+            elif pictures[n] is not None:
+                out += [("image", b) for b in encode_images(pictures[n])]
+        return io.NodeOutput(out)
+
+
+def picture_prompt(prompt, pictures):
+    lines, count = [], 0
+    for i, (kind, value) in enumerate(pictures):
+        if kind == "image":
+            count += 1
+            lines.append(f"<Picture {i + 1}>: attached image {count}.")
+        else:
+            lines.append(f"<Picture {i + 1}>: no image attached, described as: {value}")
+    return "Reference pictures:\n" + "\n".join(lines) + f"\n\n{prompt}"
+
+
+def picture_images(pictures):
+    return [value for kind, value in pictures if kind == "image"]
+
+
+class MiniMaxRef2VA(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxRef2VA",
+            display_name="MiniMax Ref2VA",
+            category="conditioning/prompt",
+            inputs=[
+                LLMConnection.Input("llm", optional=True),
+                Pictures.Input("pictures", optional=True),
+                io.String.Input("prompt", multiline=True, default=""),
+                io.Combo.Input("preset", options=list(PRESETS["ref2va"])),
+                *file_inputs("text"),
+            ],
+            outputs=[io.String.Output("enhanced_prompt")],
+        )
+
+    @classmethod
+    def execute(cls, prompt, preset, save_format, subfolder, load_from_cache, cache_file, llm=None, pictures=None) -> io.NodeOutput:
+        if load_from_cache:
+            enhanced = load_cached(cache_file)
+        else:
+            if llm is None or not pictures:
+                raise ValueError("Connect llm and pictures, or turn on load_from_cache")
+            enhanced = chat(llm, PRESETS["ref2va"][preset], picture_prompt(prompt, pictures), picture_images(pictures))
+            save_output(save_format, subfolder, preset, llm, prompt, enhanced, len(pictures))
+        return io.NodeOutput(enhanced, ui=ui.PreviewText(enhanced))
+
+
+class MiniMaxFL2VA(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxFL2VA",
+            display_name="MiniMax FL2VA",
+            category="conditioning/prompt",
+            inputs=[
+                LLMConnection.Input("llm", optional=True),
+                Pictures.Input("pictures", optional=True, tooltip="Picture 1 is the first frame, Picture 2 the last frame."),
+                io.String.Input("prompt", multiline=True, default=""),
+                io.Combo.Input("preset", options=list(PRESETS["fl2va"])),
+                io.Float.Input("last_frame_seconds", default=6.0, min=0.0, max=60.0, step=0.01),
+                *file_inputs("text"),
+            ],
+            outputs=[io.String.Output("enhanced_prompt")],
+        )
+
+    @classmethod
+    def execute(cls, prompt, preset, last_frame_seconds, save_format, subfolder, load_from_cache, cache_file, llm=None, pictures=None) -> io.NodeOutput:
+        if load_from_cache:
+            enhanced = load_cached(cache_file)
+        else:
+            if llm is None or not pictures:
+                raise ValueError("Connect llm and pictures, or turn on load_from_cache")
+            text = picture_prompt(f"Last frame (Picture 2) at {last_frame_seconds:.2f} seconds.\n\n{prompt}", pictures)
+            enhanced = chat(llm, PRESETS["fl2va"][preset], text, picture_images(pictures))
+            save_output(save_format, subfolder, preset, llm, prompt, enhanced, len(pictures))
         return io.NodeOutput(enhanced, ui=ui.PreviewText(enhanced))
 
 
 class PromptEnhancerExtension(ComfyExtension):
     async def get_node_list(self) -> list[type[io.ComfyNode]]:
-        return [LLMConnector, LLMVision, LLMPromptEnhancer]
+        return [LLMConnector, LLMVision, LLMPromptEnhancer, PictureCombine, MiniMaxRef2VA, MiniMaxFL2VA]

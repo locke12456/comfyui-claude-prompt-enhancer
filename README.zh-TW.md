@@ -36,13 +36,21 @@ pip install -r comfyui-claude-prompt-enhancer/requirements.txt
 
 用 `enhancer` preset 改寫 `prompt`。`image` 選填，會一起送出，例如當作 MiniMax I2VA 的首幀。
 
-Preset：`anima sfw/nsfw`、`moss image`、`qwen image sfw/nsfw`、`minimax i2va sfw/nsfw`、`minimax ref2va sfw/nsfw`。
+Preset：`anima sfw/nsfw`、`moss image`、`qwen image sfw/nsfw`、`minimax i2va sfw/nsfw`。
+
+### MiniMax Picture Combine
+
+收集 1–9 張 picture，每接上一個就會多出下一個 `picture_N` 欄位。每格可接圖片或 caption 文字（例如 LLM Vision 的輸出或快取），依欄位順序標為 `<Picture 1>` 到 `<Picture N>`。caption 會以文字代替圖片送出；圖片 batch 裡的每一幀各算一張。
+
+### MiniMax Ref2VA／MiniMax FL2VA
+
+輸入 `llm`、combine node 的 `pictures` 和 `prompt`，寫出 MiniMax H3 Ref2VA 或 FL2VA prompt。FL2VA 以 Picture 1 為首幀、Picture 2 為尾幀，尾幀時間由 `last_frame_seconds` 指定。
 
 ## 存檔與快取
 
-兩個文字 node 共用以下欄位：
+所有文字 node 共用以下欄位：
 
-- `save_format`：`txt`、`json` 或 `none`。存到 `output/claude-prompt-enhancer/{日期時間}-{短標題}-{編號}.{副檔名}`。json 另外記錄 preset、provider、model 和輸入。
+- `save_format`：`txt`、`json` 或 `none`。存到 `output/claude-prompt-enhancer/vision/`（LLM Vision）或 `output/claude-prompt-enhancer/text/`（其他 node），檔名為 `{日期時間}-{preset}-{N}pic-{短標題}-{編號}.{副檔名}`，N 是送出的圖片數。json 另外記錄 preset、provider、model 和輸入。
 - `subfolder`（advanced）：`output/` 底下的資料夾。
 - `load_from_cache`：開啟時讀取 `cache_file`，不送 request，`llm`／`image` 可以不接。
 - `cache_file`：`output/claude-prompt-enhancer` 裡的 txt／json 下拉選單，最新的在最上面。有新檔案時按 **R** 更新。
