@@ -5,13 +5,14 @@ ComfyUI custom nodes that caption images and rewrite prompts with Claude or a lo
 ## Layout
 
 - `nodes.py`: all nodes (V3 `comfy_api.latest` schema) and helpers. `__init__.py` only exposes `comfy_entrypoint`.
-- `presets.yaml`: every system prompt, in sections `enhancer`, `vision`, `ref2va`, `fl2va`. Each node's preset dropdown is the keys of its section. Never hardcode prompt text in Python.
+- `presets.yaml`: every system prompt, in sections `enhancer`, `vision`, `ref2va`, `fl2va`, plus the shared `next_state` instruction. Each node's preset dropdown is the keys of its section. Never hardcode prompt text in Python.
 - `doc/prompts-define.md`: the user's draft the presets came from. It is not loaded and may lag behind `presets.yaml`.
 - `workflows/`: one API-format sample per feature. A copy lives in `output/claude-prompt-enhancer/workflows/`; update both when inputs change.
 
 ## Nodes
 
 - `LLMConnector`: `provider` is a DynamicCombo (`claude` / `local`) and outputs an `LLM_CONNECTION` dict. `local` posts to `{host}/v1/chat/completions`. Defaults match the user's Strata server (`127.0.0.1:8080`, key `1234`, model `rvn-iq3s`, `think` sent as `reasoning_effort`).
+- `LLMPromptEnhancer` has `next_state`, which appends `presets.yaml` `next_state.instruction` to any enhancer preset.
 - `LLMVision`, `LLMPromptEnhancer`, `MiniMaxRef2VA`, `MiniMaxFL2VA`: text nodes sharing `file_inputs()` (`save_format`, `subfolder`, `load_from_cache`, `cache_file`). They return a STRING plus `ui.PreviewText`. `llm` and image inputs are optional so the cache path works without them.
 - `MiniMaxPictureCombine`: Autogrow `picture_N` slots (max 9), each IMAGE or STRING. Outputs a list of `("image", b64)` / `("caption", text)`. `picture_prompt` labels them `<Picture N>` in slot order and only real images are attached.
 

@@ -50,7 +50,8 @@
       "save_format": "json",
       "subfolder": "claude-prompt-enhancer/text",
       "load_from_cache": false,
-      "cache_file": "none"
+      "cache_file": "none",
+      "next_state": false
     }
   }
 }

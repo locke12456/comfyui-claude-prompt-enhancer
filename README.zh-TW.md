@@ -36,9 +36,9 @@ pip install -r comfyui-claude-prompt-enhancer/requirements.txt
 
 用 `enhancer` preset 改寫 `prompt`。`image` 選填，會一起送出，例如當作 MiniMax I2VA 的首幀。
 
-Preset：`anima sfw/nsfw`、`moss image`、`qwen image sfw/nsfw`、`minimax i2va sfw/nsfw`、`next state sfw/nsfw`。
+Preset：`anima sfw/nsfw`、`moss image`、`qwen image sfw/nsfw`、`minimax i2va sfw/nsfw`。
 
-`next state` 以接上的圖片為目前狀態，`prompt` 寫一句接下來發生的事（例如「小貓跳起來」），輸出變化後那一刻的畫面描述，其餘保持不變。
+`next_state` 可搭配任何 preset：接上的圖片是目前狀態，`prompt` 寫接下來發生的事（例如「小貓跳起來」），輸出所選 preset 格式的、變化後那一刻的 prompt，其餘保持不變。
 
 ### MiniMax Picture Combine
 

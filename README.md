@@ -36,9 +36,9 @@ Captions `image` with a `vision` preset. The caption can feed the enhancer's `pr
 
 Rewrites `prompt` with an `enhancer` preset. `image` is optional and is sent along, for example as the first frame for MiniMax I2VA.
 
-Presets: `anima sfw/nsfw`, `moss image`, `qwen image sfw/nsfw`, `minimax i2va sfw/nsfw`, `next state sfw/nsfw`.
+Presets: `anima sfw/nsfw`, `moss image`, `qwen image sfw/nsfw`, `minimax i2va sfw/nsfw`.
 
-`next state` takes the connected image as the current state and a short `prompt` such as "the kitten jumps up", and describes the image right after that change while keeping everything else the same.
+`next_state` works with every preset: the connected image is the current state, `prompt` is what happens next (e.g. "the kitten jumps up"), and the output is the selected preset's prompt for the image right after that change, keeping everything else the same.
 
 ### MiniMax Picture Combine
 

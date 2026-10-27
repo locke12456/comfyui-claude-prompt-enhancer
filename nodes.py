@@ -195,6 +195,8 @@ class LLMPromptEnhancer(io.ComfyNode):
                 io.String.Input("prompt", multiline=True, default=""),
                 io.Combo.Input("preset", options=list(PRESETS["enhancer"])),
                 io.Image.Input("image", optional=True, tooltip="First frame or references for the MiniMax presets."),
+                io.Boolean.Input("next_state", default=False,
+                                 tooltip="Treat image as the current state and prompt as what happens next; write the prompt for the resulting image."),
                 *file_inputs("text"),
             ],
             outputs=[io.String.Output("enhanced_prompt")],
@@ -202,14 +204,18 @@ class LLMPromptEnhancer(io.ComfyNode):
         )
 
     @classmethod
-    def execute(cls, prompt, preset, save_format, subfolder, load_from_cache, cache_file, llm=None, image=None) -> io.NodeOutput:
+    def execute(cls, prompt, preset, next_state, save_format, subfolder, load_from_cache, cache_file, llm=None, image=None) -> io.NodeOutput:
         if load_from_cache:
             enhanced = load_cached(cache_file)
         else:
             if llm is None:
                 raise ValueError("Connect llm, or turn on load_from_cache")
             images = encode_images(image) if image is not None else ()
-            enhanced = chat(llm, PRESETS["enhancer"][preset], prompt, images)
+            system = PRESETS["enhancer"][preset]
+            if next_state:
+                system += "\n\n" + PRESETS["next_state"]["instruction"]
+                preset += " next"
+            enhanced = chat(llm, system, prompt, images)
             save_output(save_format, subfolder, preset, llm, prompt, enhanced, len(images))
         return io.NodeOutput(enhanced, ui=ui.PreviewText(enhanced))
 
