@@ -1,0 +1,58 @@
+{
+  "1": {
+    "class_type": "LLMConnector",
+    "inputs": {
+      "provider": "local",
+      "provider.model": "rvn-iq3s",
+      "provider.host": "http://127.0.0.1:8080",
+      "provider.api_key": "1234",
+      "provider.think": "off",
+      "max_tokens": 3000
+    }
+  },
+  "2": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "0001-chibi.png"
+    }
+  },
+  "3": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "0002-chibi.png"
+    }
+  },
+  "4": {
+    "class_type": "MiniMaxPictureCombine",
+    "inputs": {
+      "pictures.picture_0": [
+        "2",
+        0
+      ],
+      "pictures.picture_1": [
+        "3",
+        0
+      ]
+    }
+  },
+  "5": {
+    "class_type": "MiniMaxFL2VA",
+    "inputs": {
+      "llm": [
+        "1",
+        0
+      ],
+      "pictures": [
+        "4",
+        0
+      ],
+      "prompt": "she turns around slowly",
+      "preset": "minimax fl2va sfw",
+      "last_frame_seconds": 5.0,
+      "save_format": "txt",
+      "subfolder": "claude-prompt-enhancer/text",
+      "load_from_cache": false,
+      "cache_file": "none"
+    }
+  }
+}

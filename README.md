@@ -57,6 +57,10 @@ All text nodes share these inputs:
 
 The result is shown on the node as a text preview.
 
+## Workflows
+
+`workflows/` has one API-format sample per feature: `vision`, `prompt-enhancer`, `vision-to-enhancer`, `minimax-i2va`, `minimax-ref2va`, `minimax-fl2va`. Drag one into ComfyUI. They use the local Strata defaults and images from `input/`; adjust both to your setup.
+
 ## Editing presets
 
 Presets live in `presets.yaml` as system prompts. Edit and restart ComfyUI. `prompts-define.md` documents the rules behind them.

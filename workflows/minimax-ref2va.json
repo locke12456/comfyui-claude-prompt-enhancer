@@ -1,0 +1,86 @@
+{
+  "1": {
+    "class_type": "LLMConnector",
+    "inputs": {
+      "provider": "local",
+      "provider.model": "rvn-iq3s",
+      "provider.host": "http://127.0.0.1:8080",
+      "provider.api_key": "1234",
+      "provider.think": "off",
+      "max_tokens": 3000
+    }
+  },
+  "2": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "0001-npc.png"
+    }
+  },
+  "3": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "0001-chibi-spider.png"
+    }
+  },
+  "4": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "0001-guess.png"
+    }
+  },
+  "5": {
+    "class_type": "LLMVision",
+    "inputs": {
+      "llm": [
+        "1",
+        0
+      ],
+      "image": [
+        "3",
+        0
+      ],
+      "preset": "vision sfw",
+      "instruction": "",
+      "save_format": "txt",
+      "subfolder": "claude-prompt-enhancer/vision",
+      "load_from_cache": false,
+      "cache_file": "none"
+    }
+  },
+  "6": {
+    "class_type": "MiniMaxPictureCombine",
+    "inputs": {
+      "pictures.picture_0": [
+        "2",
+        0
+      ],
+      "pictures.picture_1": [
+        "5",
+        0
+      ],
+      "pictures.picture_2": [
+        "4",
+        0
+      ]
+    }
+  },
+  "7": {
+    "class_type": "MiniMaxRef2VA",
+    "inputs": {
+      "llm": [
+        "1",
+        0
+      ],
+      "pictures": [
+        "6",
+        0
+      ],
+      "prompt": "the characters from the pictures meet in a cozy cafe and chat",
+      "preset": "minimax ref2va sfw",
+      "save_format": "json",
+      "subfolder": "claude-prompt-enhancer/text",
+      "load_from_cache": false,
+      "cache_file": "none"
+    }
+  }
+}

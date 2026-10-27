@@ -1,0 +1,28 @@
+{
+  "1": {
+    "class_type": "LLMConnector",
+    "inputs": {
+      "provider": "local",
+      "provider.model": "rvn-iq3s",
+      "provider.host": "http://127.0.0.1:8080",
+      "provider.api_key": "1234",
+      "provider.think": "off",
+      "max_tokens": 3000
+    }
+  },
+  "2": {
+    "class_type": "LLMPromptEnhancer",
+    "inputs": {
+      "llm": [
+        "1",
+        0
+      ],
+      "prompt": "a girl with white hair and cat ears reading in a sunny library",
+      "preset": "anima sfw",
+      "save_format": "txt",
+      "subfolder": "claude-prompt-enhancer/text",
+      "load_from_cache": false,
+      "cache_file": "none"
+    }
+  }
+}

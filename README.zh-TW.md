@@ -57,6 +57,10 @@ Preset：`anima sfw/nsfw`、`moss image`、`qwen image sfw/nsfw`、`minimax i2va
 
 結果會以文字預覽顯示在 node 上。
 
+## Workflow
+
+`workflows/` 每個功能各一份 API 格式範例：`vision`、`prompt-enhancer`、`vision-to-enhancer`、`minimax-i2va`、`minimax-ref2va`、`minimax-fl2va`，拖進 ComfyUI 即可。預設連本地 Strata，圖片取自 `input/`，請依自己的環境調整。
+
 ## 修改 preset
 
 Preset 以 system prompt 形式放在 `presets.yaml`，改完重啟 ComfyUI 即可。`prompts-define.md` 說明各 preset 的撰寫規則。

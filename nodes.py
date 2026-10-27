@@ -68,7 +68,8 @@ def output_path(relative):
 def cached_files():
     root = output_path("claude-prompt-enhancer")
     files = []
-    for dirpath, _, names in os.walk(root):
+    for dirpath, dirs, names in os.walk(root):
+        dirs[:] = [d for d in dirs if d != "workflows"]
         files += [os.path.relpath(os.path.join(dirpath, n), root).replace("\\", "/") for n in names if n.endswith((".txt", ".json"))]
     return ["none"] + sorted(files, reverse=True)
 

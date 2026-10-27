@@ -1,0 +1,38 @@
+{
+  "1": {
+    "class_type": "LLMConnector",
+    "inputs": {
+      "provider": "local",
+      "provider.model": "rvn-iq3s",
+      "provider.host": "http://127.0.0.1:8080",
+      "provider.api_key": "1234",
+      "provider.think": "off",
+      "max_tokens": 3000
+    }
+  },
+  "2": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "0001-chibi.png"
+    }
+  },
+  "3": {
+    "class_type": "LLMVision",
+    "inputs": {
+      "llm": [
+        "1",
+        0
+      ],
+      "image": [
+        "2",
+        0
+      ],
+      "preset": "vision sfw",
+      "instruction": "",
+      "save_format": "txt",
+      "subfolder": "claude-prompt-enhancer/vision",
+      "load_from_cache": false,
+      "cache_file": "none"
+    }
+  }
+}
